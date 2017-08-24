@@ -94,6 +94,23 @@
   <ItemGroup>
     <None Include="Source.def" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\AssetsTools\AssetBundleFileTable.h" />
+    <ClInclude Include="inc\AssetsTools\AssetsBundleFileFormat.h" />
+    <ClInclude Include="inc\AssetsTools\AssetsFileFormat.h" />
+    <ClInclude Include="inc\AssetsTools\AssetsFileReader.h" />
+    <ClInclude Include="inc\AssetsTools\AssetsFileTable.h" />
+    <ClInclude Include="inc\AssetsTools\AssetsReplacer.h" />
+    <ClInclude Include="inc\AssetsTools\AssetTypeClass.h" />
+    <ClInclude Include="inc\AssetsTools\BundleReplacer.h" />
+    <ClInclude Include="inc\AssetsTools\ClassDatabaseFile.h" />
+    <ClInclude Include="inc\AssetsTools\defines.h" />
+    <ClInclude Include="inc\AssetsTools\ResourceManagerFile.h" />
+    <ClInclude Include="inc\AssetsTools\TextureFileFormat.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lib\AssetsTools.lib" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
