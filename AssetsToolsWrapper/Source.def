@@ -1,0 +1,5 @@
+LIBRARY AssetsToolsWrapper
+EXPORTS
+GetImageInfo = GetImageInfo
+LoadImageFromBundle = LoadImageFromBundle
+ReplaceImageFile = ReplaceImageFile
