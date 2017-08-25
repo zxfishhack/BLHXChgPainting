@@ -66,7 +66,7 @@ bool GetImageInfo(const char* fn, int& bufSize) {
 	AssetsBundleFile bf;
 	AssetBundleAsset asset;
 	FILE *fo;
-	fn = "D:\\from_nox\\Nox_share\\Other\\files\\AssetBundles\\painting\\aikesaite_enc_tex";
+	//fn = "D:\\from_nox\\Nox_share\\Other\\files\\AssetBundles\\painting\\aikesaite_enc_tex";
 	file infile;
 	infile.open(fn);
 	fopen_s(&fo, "temp", "wb");
@@ -77,7 +77,7 @@ bool GetImageInfo(const char* fn, int& bufSize) {
 		LPARAM p;
 		reader = bf.MakeAssetsFileReader(file::reader, &p, &dirInfo);
 		if (bf.IsAssetsFile(reader, p, &dirInfo)) {
-			asset.ReadBundleFile();
+			//asset.ReadBundleFile();
 		}
 	}
 	//auto ret = bf.Unpack(file::reader, infile, writer, LPARAM(fo));
@@ -100,3 +100,7 @@ bool ReplaceImageFile(const char* fn, const char* png) {
 	return false;
 }
 
+void Test(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
+	int bufSize;
+	GetImageInfo(lpszCmdLine, bufSize);
+}
