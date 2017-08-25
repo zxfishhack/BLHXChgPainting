@@ -6,6 +6,7 @@
 #include "AssetsTools\AssetsFileReader.h"
 #include "AssetsTools\AssetsBundleFileFormat.h"
 #include "AssetsTools\AssetBundleFileTable.h"
+#include "AssetsTools\AssetsFileFormat.h"
 
 BOOL WINAPI DllMain(
 	_In_ HINSTANCE hinstDLL,
@@ -66,21 +67,26 @@ bool GetImageInfo(const char* fn, int& bufSize) {
 	AssetsBundleFile bf;
 	AssetBundleAsset asset;
 	FILE *fo;
-	//fn = "D:\\from_nox\\Nox_share\\Other\\files\\AssetBundles\\painting\\aikesaite_enc_tex";
 	file infile;
 	infile.open(fn);
-	fopen_s(&fo, "temp", "wb");
+#if 1
 	auto ret = bf.Read(file::reader, infile, verifyLog, true);
+#else
+	fopen_s(&fo, "temp", "wb");
+	auto ret = bf.Unpack(file::reader, infile, writer, LPARAM(fo));
+	fclose(fo);
+#endif
 	AssetsFileReader reader;
-	AssetsBundleDirectoryInfo06 dirInfo;
+	
 	if (bf.bundleHeader6.fileVersion == 6) {
 		LPARAM p;
-		reader = bf.MakeAssetsFileReader(file::reader, &p, &dirInfo);
-		if (bf.IsAssetsFile(reader, p, &dirInfo)) {
-			//asset.ReadBundleFile();
+		if (bf.IsAssetsFile(file::reader, infile, bf.bundleInf6->dirInf)) {
+			reader = bf.MakeAssetsFileReader(file::reader, &p, bf.bundleInf6->dirInf);
+			AssetsFile assetsFile(reader, p);
+			assetsFile.AssetCount;
 		}
 	}
-	//auto ret = bf.Unpack(file::reader, infile, writer, LPARAM(fo));
+	
 	//bufSize = 1025051;
 	return true;
 }
