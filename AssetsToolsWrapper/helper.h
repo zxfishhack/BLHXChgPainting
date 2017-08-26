@@ -9,6 +9,7 @@
 #include "AssetsTools/AssetsFileFormat.h"
 #include "AssetsTools/AssetsFileTable.h"
 #include "AssetsTools/AssetTypeClass.h"
+#include "AssetsTools/TextureFileFormat.h"
 
 class AssetTypeValueField;
 
@@ -95,8 +96,8 @@ bool same_order(T&&... tail) {
 
 QWORD _cdecl writer(QWORD pos, QWORD count, const void *pBuf, LPARAM par);
 
-bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width, int height);
-bool readPng(const char * fn, std::auto_ptr<char>& buf, int& width, int& height);
+bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width, int height, TextureFormat format);
+bool readPng(const char * fn, std::auto_ptr<char>& buf, int& width, int& height, TextureFormat format);
 
 void memcpy2D(void *dst_, size_t dstPitch, void *src_, size_t srcPitch, size_t size, size_t count);
 

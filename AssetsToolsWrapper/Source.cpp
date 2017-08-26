@@ -14,6 +14,7 @@
 #include "color_process.h"
 #include "helper.h"
 #include <map>
+#include "AssetsTools/TextureFileFormat.h"
 
 std::string g_curHash, g_lastHash;
 std::string g_tempFile;
@@ -139,13 +140,14 @@ bool ExtraPngFile(const char* fn, const char* textureName) {
 				auto imgData = rtv["image data"]->GetValue()->AsByteArray();
 				std::auto_ptr<char> imgBuf(new char[imgData->size]);
 				auto width = rtv["m_Width"]->GetValue()->AsInt(), height = rtv["m_Height"]->GetValue()->AsInt();
+				auto textureFormat = (TextureFormat)rtv["m_TextureFormat"]->GetValue()->AsInt();
 				memcpy(imgBuf.get(), imgData->data, imgData->size);
 				if (isEncoded) {
 					blhx::decode(imgBuf.get(), width, height);
 				}
 				std::auto_ptr<char> pngBuf;
 				size_t size;
-				if (getPngBuf(pngBuf, size, imgBuf.get(), width, height)) {
+				if (getPngBuf(pngBuf, size, imgBuf.get(), width, height, textureFormat)) {
 					textures[textureName].assign(pngBuf.get(), size);
 					return true;
 				}
@@ -238,7 +240,7 @@ bool LoadImageFromBundle(const char* fn, void* buf, const char* textureName) {
 bool ReplaceImageFile(const char* fn, const char* png, const char* textureName) {
 	std::auto_ptr<char> pngBuf;
 	int pngWidth, pngHeight;
-	if (!readPng(png, pngBuf, pngWidth, pngHeight))
+	if (!readPng(png, pngBuf, pngWidth, pngHeight, TexFmt_RGBA32))
 		return false;
 	AssetsBundleFile bf;
 	file infile;
@@ -280,8 +282,10 @@ bool ReplaceImageFile(const char* fn, const char* png, const char* textureName) 
 				AssetTypeInstance inst(1, &pr, AssetsReaderFromMemory, assetValueReader, false);
 				auto& rtv = *(inst.GetBaseField());
 				auto imgData = rtv["image data"]->GetValue()->AsByteArray();
-				std::auto_ptr<char> imgBuf(new char[imgData->size]);
 				auto width = rtv["m_Width"]->GetValue()->AsInt(), height = rtv["m_Height"]->GetValue()->AsInt();
+				int format = TexFmt_RGBA32;
+				rtv["m_TextureFormat"]->GetValue()->Set(&format);
+				std::auto_ptr<char> imgBuf(new char[width * height * 4]);
 				if (!same_order(pngWidth, width, pngHeight,height)) {
 					return false;
 				}

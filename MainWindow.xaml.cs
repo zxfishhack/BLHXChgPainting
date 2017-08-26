@@ -125,6 +125,18 @@ namespace BLHXChgPainting
 
         private async void Process(object sender, RoutedEventArgs e)
         {
+#if (DEBUG)
+            var debugOutput = "d:\\temp\\debug_output";
+            File.Copy(Vm.BundleFile, debugOutput, true);
+            if (!AssetTool.ReplaceImageFile(debugOutput, Vm.PngFile, Vm.TextureList[Vm.CurSel]))
+            {
+                MessageBox.Show("修改文件出错。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                MessageBox.Show("修改文件成功。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+#else
             int idx;
             if (Vm.BundleFile == "" || Vm.HashesPath == "" || Vm.PngFile == "")
             {
@@ -216,6 +228,7 @@ namespace BLHXChgPainting
                     }
                 }
             }
+#endif
         }
 
         private static byte[] GetImageFromBundle(string bundleFile, string textureName)

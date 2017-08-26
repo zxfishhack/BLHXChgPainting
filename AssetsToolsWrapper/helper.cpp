@@ -27,10 +27,166 @@ extern std::string g_tempFile;
 
 #define tmpPngFile ((g_tempFile + ".png").c_str())
 
-bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width, int height) {
+unsigned int _ntohl(unsigned int b) {
+	auto a = b & 0xff;
+	a <<= 8;
+	b >>= 8;
+	a |= b & 0xff;
+	a <<= 8;
+	b >>= 8;
+	a |= b & 0xff;
+	a <<= 8;
+	b >>= 8;
+	a |= b & 0xff;
+	return a;
+}
+
+void batch_ntohl(void* from, void* to, size_t size) {
+	auto * from_ = (unsigned int*)from;
+	auto * to_ = (unsigned int*)to;
+	for(auto i=0; i<size; i++) {
+		to_[i] = _ntohl(from_[i]);
+	}
+}
+
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef short int16;
+void decompressBlockAlphaC(uint8* data, uint8* img, int width, int height, int ix, int iy, int channels);
+void decompressBlockETC2c(unsigned int block_part1, unsigned int block_part2, uint8 *img, int width, int height, int startx, int starty, int channels);
+
+// read color block from data stream
+void readColorBlockETC(byte **stream, unsigned int &block1, unsigned int &block2)
+{
+	byte *data = *stream;
+	block1 = 0;           block1 |= data[0];
+	block1 = block1 << 8; block1 |= data[1];
+	block1 = block1 << 8; block1 |= data[2];
+	block1 = block1 << 8; block1 |= data[3];
+	block2 = 0;           block2 |= data[4];
+	block2 = block2 << 8; block2 |= data[5];
+	block2 = block2 << 8; block2 |= data[6];
+	block2 = block2 << 8; block2 |= data[7];
+	*stream = data + 8;
+}
+
+void ETC2RGB4ToRGBA32(void *in, void* out, int width, int height) {
+	byte *data, *stream, rgba[4 * 4 * 4], *lb;
+	unsigned int block1, block2;
+	int x, y, w, h, bpp;
+	int lx, ly, lw, lh;
+
+	// init
+	w = width;
+	h = height;
+	bpp = 4;
+	data = (byte*)out;
+	stream = (byte*)in;
+
+	for (y = 0; y < h; y += 4)
+	{
+		for (x = 0; x < w; x += 4)
+		{
+			readColorBlockETC(&stream, block1, block2);
+			decompressBlockETC2c(block1, block2, rgba, 4, 4, 0, 0, 4);
+			lb = rgba;
+			lh = min(y + 4, h) - y;
+			lw = min(x + 4, w) - x;
+			for (ly = 0; ly < lh; ly++, lb += 4 * 4)
+				for (lx = 0; lx < lw; lx++) {
+					memcpy(data + (w*(y + ly) + x + lx)*bpp, lb + lx * 4, 3);
+					data[(w*(y + ly) + x + lx)*bpp + 3] = 255;
+				}
+		}
+	}
+}
+
+void ETC2RGBA8ToRGBA32(void *in, void* out, int width, int height) {
+	byte *data, *stream, rgba[4 * 4 * 4], *lb;
+	unsigned int block1, block2;
+	int x, y, w, h, bpp;
+	int lx, ly, lw, lh;
+
+	// init
+	w = width;
+	h = height;
+	bpp = 4;
+	data = (byte*)out;
+	stream = (byte*)in;
+
+	for (y = 0; y < h; y += 4)
+	{
+		for (x = 0; x < w; x += 4)
+		{
+			// EAC block + ETC2 RGB block
+			decompressBlockAlphaC(stream, rgba + 3, 4, 4, 0, 0, 4);
+			stream += 8;
+			readColorBlockETC(&stream, block1, block2);
+			decompressBlockETC2c(block1, block2, rgba, 4, 4, 0, 0, 4);
+			lb = rgba;
+			lh = min(y + 4, h) - y;
+			lw = min(x + 4, w) - x;
+			for (ly = 0; ly < lh; ly++, lb += 4 * 4)
+				for (lx = 0; lx < lw; lx++)
+					memcpy(data + (w*(y + ly) + x + lx)*bpp, lb + lx * 4, 4);
+		}
+	}
+}
+
+void* convertTextureFormat(void* buf, int width, int height, bool& needFree, TextureFormat from, TextureFormat to) {
+	needFree = false;
+
+	if (from == to) {
+		return buf;
+	}
+
+	void* ret = NULL;
+
+	if (to == TexFmt_RGBA32) {
+		if (from == TexFmt_ARGB32) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			batch_ntohl(buf, ret, width * height);
+		} else if (from == TexFmt_ETC2_RGBA8) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			ETC2RGBA8ToRGBA32(buf, ret, width, height);
+		} else if (from == TexFmt_ETC2_RGB4) {
+#if 1
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			ETC2RGB4ToRGBA32(buf, ret, width, height);
+#endif
+		}
+	} else if (to == TexFmt_ARGB32) {
+		if (from == TexFmt_RGBA32) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			batch_ntohl(buf, ret, width * height);
+		}
+	}
+
+	return ret;
+}
+
+
+bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width, int height, TextureFormat format) {
 	FILE* fp = NULL;
 	png_structp png = NULL;
 	png_infop info = NULL;
+	bool needFree = false;
+	buf = convertTextureFormat(buf, width, height, needFree, format, TexFmt_RGBA32);
+	if (!buf) {
+		return false;
+	}
 	auto img = static_cast<png_byte*>(buf);
 	auto ret = false;
 	do {
@@ -88,14 +244,19 @@ bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width,
 		fclose(fp);
 	}
 
+	if (needFree && buf) {
+		free(buf);
+	}
+
 	return ret;
 }
 
-bool readPng(const char *fn, std::auto_ptr<char> &buf, int &width, int &height) {
+bool readPng(const char *fn, std::auto_ptr<char> &buf, int &width, int &height, TextureFormat format) {
 	FILE* fp = NULL;
 	png_structp png = NULL;
 	png_infop info = NULL, endInfo = NULL;;
 	png_byte* img = NULL;
+	bool needFree = false;
 	auto ret = false;
 	do {
 		fopen_s(&fp, fn, "rb");
@@ -146,7 +307,12 @@ bool readPng(const char *fn, std::auto_ptr<char> &buf, int &width, int &height) 
 		}
 
 		png_read_image(png, prows.get());
-		buf.reset((char*)img);
+
+		buf.reset((char*)convertTextureFormat(img, width, height, needFree, TexFmt_RGBA32, format));
+
+		if (buf.get() == NULL) {
+			break;
+		}
 
 		png_read_end(png, endInfo);
 
@@ -164,7 +330,12 @@ bool readPng(const char *fn, std::auto_ptr<char> &buf, int &width, int &height) 
 	if (!ret) {
 		if (img) {
 			delete[]img;
+			img = NULL;
 		}
+	}
+
+	if (needFree && img) {
+		delete[]img;
 	}
 
 	return ret;
@@ -243,20 +414,6 @@ void inc(char*& dst, char*& src, size_t size) {
 void scp(char*& dst, char*& src, size_t size) {
 	memcpy(dst, src, size);
 	inc(dst, src, size);
-}
-
-unsigned int _ntohl(unsigned int b) {
-	auto a = b & 0xff;
-	a <<= 8;
-	b >>= 8;
-	a |= b & 0xff;
-	a <<= 8;
-	b >>= 8;
-	a |= b & 0xff;
-	a <<= 8;
-	b >>= 8;
-	a |= b & 0xff;
-	return a;
 }
 
 void postFix(const char *srcFile, const char *dstFile) {
