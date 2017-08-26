@@ -3,4 +3,3 @@ EXPORTS
 GetImageInfo = GetImageInfo
 LoadImageFromBundle = LoadImageFromBundle
 ReplaceImageFile = ReplaceImageFile
-Test = Test

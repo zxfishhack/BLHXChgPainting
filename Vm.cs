@@ -17,7 +17,6 @@ namespace BLHXChgPainting
         private string _pngFile = "";
         private BitmapImage _img = null;
         private BitmapImage _pngImg = null;
-        private Rect _imgRect = new Rect();
 
         public BitmapImage Img
         {

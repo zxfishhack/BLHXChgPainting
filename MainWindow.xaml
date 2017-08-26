@@ -57,8 +57,8 @@
                 <Button Grid.Column="2" Click="Process">替换</Button>
             </Grid>
         </StackPanel>
-        <TextBlock  Grid.Row="1" Text="{Binding ImgDesc}"/>
-        <StackPanel  Grid.Row="2" Orientation="Horizontal">
+        <TextBlock TextAlignment="Center" Grid.Row="1" Text="{Binding ImgDesc}"/>
+        <StackPanel  Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
             <Image Source="{Binding Img}" StretchDirection="DownOnly"></Image>
             <Image Source="{Binding PngImg}" StretchDirection="DownOnly"></Image>
         </StackPanel>

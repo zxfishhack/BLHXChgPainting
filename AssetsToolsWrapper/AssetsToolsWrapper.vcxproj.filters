@@ -18,6 +18,15 @@
     <ClCompile Include="Source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="md5.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="color_process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="helper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def">
@@ -60,6 +69,15 @@
     </ClInclude>
     <ClInclude Include="inc\AssetsTools\TextureFileFormat.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="md5.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="color_process.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="helper.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
