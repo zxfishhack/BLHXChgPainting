@@ -287,12 +287,14 @@ void postFix(const char *srcFile, const char *dstFile) {
 		scp(dst, src, 53);
 		remain -= 53;
 		*dst = 0;
+		remain -= 1;
 		//skip 03
 		inc(dst, src, 1);
 		scp(dst, src, 49);
+		remain -= 49;
 		//跳过多余的三个字节
 		src += 3;
-		remain -= 49;
+		remain -= 3;
 		scp(dst, src, remain);
 		fopen_s(&fp, dstFile, "wb");
 		if (!fp) break;
