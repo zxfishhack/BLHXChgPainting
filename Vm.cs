@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,7 @@ namespace BLHXChgPainting
         private string _pngFile = "";
         private BitmapImage _img = null;
         private BitmapImage _pngImg = null;
+        private int _curSel = 0;
 
         public BitmapImage Img
         {
@@ -95,6 +97,18 @@ namespace BLHXChgPainting
                 OnPropertyChanged("PngFile");
             }
         }
+
+        public int CurSel
+        {
+            get { return _curSel; }
+            set
+            {
+                _curSel = value;
+                OnPropertyChanged("CurSel");
+            }
+        }
+
+        public ObservableCollection<string> TextureList { get; } = new ObservableCollection<string>();
 
         public event PropertyChangedEventHandler PropertyChanged;
 

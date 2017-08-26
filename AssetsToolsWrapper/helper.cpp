@@ -23,17 +23,18 @@ void PNGCBAPI png_free(png_structp png, png_voidp ptr) {
 	free(ptr);
 }
 
-bool writePng(const char * fn, void * buf, int width, int height) {
-	std::string debugInfo = "writing ";
-	debugInfo += fn;
-	OutputDebugStringA(debugInfo.c_str());
+extern std::string g_tempFile;
+
+#define tmpPngFile ((g_tempFile + ".png").c_str())
+
+bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width, int height) {
 	FILE* fp = NULL;
 	png_structp png = NULL;
 	png_infop info = NULL;
 	auto img = static_cast<png_byte*>(buf);
 	auto ret = false;
 	do {
-		fopen_s(&fp, fn, "wb");
+		fopen_s(&fp, tmpPngFile, "wb");
 		if (!fp)
 			break;
 		png = png_create_write_struct(png_get_libpng_ver(NULL), NULL, NULL, NULL);
@@ -76,13 +77,21 @@ bool writePng(const char * fn, void * buf, int width, int height) {
 		fclose(fp);
 	}
 
+	if (ret) {
+		fopen_s(&fp, tmpPngFile, "rb");
+		if (!fp) return false;
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
+		pngBuf.reset(new char[size]);
+		fseek(fp, 0, SEEK_SET);
+		fread(pngBuf.get(), 1, size, fp);
+		fclose(fp);
+	}
+
 	return ret;
 }
 
 bool readPng(const char *fn, std::auto_ptr<char> &buf, int &width, int &height) {
-	std::string debugInfo = "reading ";
-	debugInfo += fn;
-	OutputDebugStringA(debugInfo.c_str());
 	FILE* fp = NULL;
 	png_structp png = NULL;
 	png_infop info = NULL, endInfo = NULL;;
@@ -271,18 +280,19 @@ void postFix(const char *srcFile, const char *dstFile) {
 		// 调整大小
 		auto size = _ntohl(*(unsigned int*)(buf.get() + 0x1e));
 		size -= 3;
+		size = _ntohl(size);
 		memcpy(dst, &size, 4);
 		remain -= 4;
 		inc(src, dst, 4);
 		scp(dst, src, 53);
-		remain -= 4;
+		remain -= 53;
 		*dst = 0;
 		//skip 03
 		inc(dst, src, 1);
 		scp(dst, src, 49);
 		//跳过多余的三个字节
 		src += 3;
-		remain -= 3;
+		remain -= 49;
 		scp(dst, src, remain);
 		fopen_s(&fp, dstFile, "wb");
 		if (!fp) break;

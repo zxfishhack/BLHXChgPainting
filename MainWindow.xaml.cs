@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 
@@ -13,6 +14,8 @@ namespace BLHXChgPainting
 {
     public partial class MainWindow : Window
     {
+        private bool loadList = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -32,8 +35,8 @@ namespace BLHXChgPainting
         private void SelectBundle(object sender, RoutedEventArgs e)
         {
             var op = new OpenFileDialog();
-            op.Filter = "资源文件|*_enc_tex";
-            op.Title = "打开painting目录下的_enc_tex文件...";
+            op.Filter = "资源文件|*.*";
+            op.Title = "打开painting目录下的资源文件...";
             if (op.ShowDialog() == true)
             {
                 if (LoadImageFromBundle(op.FileName))
@@ -135,6 +138,10 @@ namespace BLHXChgPainting
                 MessageBox.Show(errMsg[idx], errMsg[idx], MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+            if (Vm.TextureList.Count == 0 || Vm.CurSel >= Vm.TextureList.Count)
+            {
+                return;
+            }
             if (MessageBox.Show(Vm.ProcessTips, "继续吗?", MessageBoxButton.YesNo, MessageBoxImage.Warning) !=
                 MessageBoxResult.Yes) return;
             var assetList = ReadHashesCsv();
@@ -156,7 +163,7 @@ namespace BLHXChgPainting
                 if (MessageBox.Show("备份文件出错，是否继续？", "继续吗?", MessageBoxButton.YesNo, MessageBoxImage.Warning) !=
                     MessageBoxResult.Yes) return;
             }
-            if (!AssetTool.ReplaceImageFile(Vm.BundleFile, Vm.PngFile))
+            if (!AssetTool.ReplaceImageFile(Vm.BundleFile, Vm.PngFile, Vm.TextureList[Vm.CurSel]))
             {
                 MessageBox.Show("修改文件出错。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
                 try
@@ -211,13 +218,13 @@ namespace BLHXChgPainting
             }
         }
 
-        private static byte[] GetImageFromBundle(string bundleFile)
+        private static byte[] GetImageFromBundle(string bundleFile, string textureName)
         {
             var bufSize = 0;
-            if (!AssetTool.GetImageInfo(bundleFile, ref bufSize)) return null;
+            if (!AssetTool.GetImageInfo(bundleFile, ref bufSize, textureName)) return null;
             var buf = Marshal.AllocHGlobal(bufSize);
             var image = new byte[bufSize];
-            if (!AssetTool.LoadImageFromBundle(bundleFile, buf))
+            if (!AssetTool.LoadImageFromBundle(bundleFile, buf, textureName))
             {
                 Marshal.FreeHGlobal(buf);
                 return null;
@@ -226,9 +233,9 @@ namespace BLHXChgPainting
             return image;
         }
 
-        private bool LoadImageFromBundle(string bundleFile)
+        private bool LoadImageFromBundle(string bundleFile, string textureFile)
         {
-            var image = GetImageFromBundle(bundleFile);
+            var image = GetImageFromBundle(bundleFile, Vm.TextureList[Vm.CurSel]);
             if (image == null)
             {
                 MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -250,9 +257,35 @@ namespace BLHXChgPainting
             return true;
         }
 
+        private bool LoadImageFromBundle(string bundleFile)
+        {
+            loadList = true;
+            Vm.TextureList.Clear();
+            var lst = AssetTool.GetTextureList(bundleFile);
+            if (lst == IntPtr.Zero)
+            {
+                MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            var texLst = Marshal.PtrToStringAnsi(lst);
+            if (texLst == null)
+            {
+                MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+            foreach (var s in texLst.Split(','))
+            {
+                Vm.TextureList.Add(s);
+            }
+            Vm.CurSel = 0;
+            loadList = false;
+            return LoadImageFromBundle(bundleFile, Vm.TextureList[Vm.CurSel]);
+        }
+
         private void SaveOri(object sender, RoutedEventArgs re)
         {
-            var image = GetImageFromBundle(Vm.BundleFile);
+            var image = GetImageFromBundle(Vm.BundleFile, Vm.TextureList[Vm.CurSel]);
             if (image == null)
             {
                 MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -275,6 +308,12 @@ namespace BLHXChgPainting
             {
                 MessageBox.Show(e.Message, "发生错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void SelctTexture(object sender, SelectionChangedEventArgs e)
+        {
+            if (Vm.CurSel < 0 || Vm.CurSel >= Vm.TextureList.Count || loadList) return;
+            LoadImageFromBundle(Vm.BundleFile, Vm.TextureList[Vm.CurSel]);
         }
     }
 }

@@ -10,12 +10,15 @@ namespace BLHXChgPainting
     class AssetTool
     {
         [DllImport("AssetsToolsWrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool GetImageInfo(string fileName, ref int bufSize);
+        public static extern IntPtr GetTextureList(string fileName);
 
         [DllImport("AssetsToolsWrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool LoadImageFromBundle(string fileName, IntPtr image);
+        public static extern bool GetImageInfo(string fileName, ref int bufSize, string textureName);
 
         [DllImport("AssetsToolsWrapper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool ReplaceImageFile(string fileName, string pngFile);
+        public static extern bool LoadImageFromBundle(string fileName, IntPtr image, string textureName);
+
+        [DllImport("AssetsToolsWrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool ReplaceImageFile(string fileName, string pngFile, string textureName);
     }
 }

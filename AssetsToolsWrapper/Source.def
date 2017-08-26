@@ -1,5 +1,6 @@
 LIBRARY AssetsToolsWrapper
 EXPORTS
+GetTextureList = GetTextureList
 GetImageInfo = GetImageInfo
 LoadImageFromBundle = LoadImageFromBundle
 ReplaceImageFile = ReplaceImageFile

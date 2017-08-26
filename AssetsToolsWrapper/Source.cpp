@@ -13,9 +13,11 @@
 #include <iomanip>
 #include "color_process.h"
 #include "helper.h"
+#include <map>
 
 std::string g_curHash, g_lastHash;
 std::string g_tempFile;
+std::map<std::string, std::string> textures;
 
 BOOL WINAPI DllMain(
 	_In_ HINSTANCE hinstDLL,
@@ -86,15 +88,18 @@ bool check_open(const char* fn_, file& f, bool& same) {
 	return ret;
 }
 
-bool ExtraPngFile(const char* fn) {
+bool ExtraPngFile(const char* fn, const char* textureName) {
 	AssetsBundleFile bf;
 	file infile;
 	bool same;
 	if (!check_open(fn, infile, same) || !bf.Read(file::reader, infile, verifyLog, false)) {
 		return false;
 	}
-	if (same) {
+	if (same && textures.find(textureName) != textures.end()) {
 		return true;
+	}
+	if (!same) {
+		textures.clear();
 	}
 	if (bf.bundleHeader6.fileVersion != 6) {
 		return false;
@@ -116,7 +121,7 @@ bool ExtraPngFile(const char* fn) {
 	for (DWORD i = 0; i<assetsFileTable.assetFileInfoCount; i++) {
 		auto assetFileInfoEx = assetsFileTable.pAssetFileInfo[i];
 		bool isEncoded = strstr(assetFileInfoEx.name, "_enc") != NULL;
-		if (assetFileInfoEx.curFileType == 0x1c) {
+		if (assetFileInfoEx.curFileType == 0x1c && strcmp(assetFileInfoEx.name, textureName) == 0) {
 			AssetTypeTemplateField root;
 			auto pr = &root;
 			// texture2D
@@ -138,64 +143,99 @@ bool ExtraPngFile(const char* fn) {
 				if (isEncoded) {
 					blhx::decode(imgBuf.get(), width, height);
 				}
-				return writePng((g_tempFile + ".png").c_str(), imgBuf.get(), width, height);
+				std::auto_ptr<char> pngBuf;
+				size_t size;
+				if (getPngBuf(pngBuf, size, imgBuf.get(), width, height)) {
+					textures[textureName].assign(pngBuf.get(), size);
+					return true;
+				}
 			}
 		}
 	}
 	return false;
 }
 
-bool GetImageInfo(const char* fn, int& bufSize) {
-	if (!ExtraPngFile(fn)) {
+std::string result;
+
+const char* GetTextureList(const char* fn) {
+	AssetsBundleFile bf;
+	file infile;
+	bool same;
+	if (!check_open(fn, infile, same) || !bf.Read(file::reader, infile, verifyLog, false)) {
+		return NULL;
+	}
+	if (same) {
+		return result.c_str();
+	}
+	if (!same) {
+		textures.clear();
+	}
+	if (bf.bundleHeader6.fileVersion != 6) {
+		return NULL;
+	}
+	LPARAM p(infile);
+	if (!bf.IsAssetsFile(file::reader, infile, bf.bundleInf6->dirInf)) {
 		return false;
 	}
-	file f;
-	if (!f.open((g_tempFile + ".png").c_str())) {
+	auto reader = bf.MakeAssetsFileReader(file::reader, &p, bf.bundleInf6->dirInf);
+	if (!reader) {
+		return NULL;
+	}
+	AssetsFileReaderAutoFree _(reader, p);
+	AssetsFile assetsFile(reader, p);
+	if (!assetsFile.VerifyAssetsFile(verifyLog) || !assetsFile.typeTree.hasTypeTree) {
+		return NULL;
+	}
+	AssetsFileTable assetsFileTable(&assetsFile);
+	result.clear();
+	for(DWORD i=0; i<assetsFileTable.assetFileInfoCount; i++) {
+		auto assetFileInfoEx = assetsFileTable.pAssetFileInfo[i];
+		if (assetFileInfoEx.curFileType == 0x1c) {
+			if (!result.empty()) {
+				result += ",";
+			}
+			result += assetFileInfoEx.name;
+		}
+	}
+	return result.c_str();
+}
+
+bool GetImageInfo(const char* fn, int& bufSize, const char* textureName) {
+	if (!ExtraPngFile(fn, textureName)) {
 		return false;
 	}
-	bufSize = int(f.length);
+	if (textures.find(textureName) == textures.end()) {
+		return false;
+	}
+	bufSize = int(textures[textureName].length());
 	return true;
 }
 
-bool readFile(const char* fn, void * buf) {
-	FILE* fp = NULL;
-	auto ret = false;
-	do {
-		fopen_s(&fp, fn, "rb");
-		if (!fp)
-			break;
-		fseek(fp, 0, SEEK_END);
-		auto length = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		ret = fread(buf, 1, length, fp) == length;
-	} while (false);
-	if (fp) {
-		fclose(fp);
-	}
-	return ret;
-}
-
-bool LoadImageFromBundle(const char* fn, void* buf) {
-	std::ifstream png;
+bool LoadImageFromBundle(const char* fn, void* buf, const char* textureName) {
 	file f;
 	bool same;
 	if (!check_open(fn, f, same)) {
 		return false;
 	}
-	std::string pngName = g_tempFile + ".png";
-	if (same && readFile(pngName.c_str(), buf)) {
+	auto it = textures.find(textureName);
+	if (same && it != textures.end()) {
+		memcpy(buf, it->second.data(), it->second.length());
 		return true;
 	}
-	if (same) {
-		g_lastHash = "";
-	}
-	if (!ExtraPngFile(fn)) {
+	if (!ExtraPngFile(fn, textureName)) {
 		return false;
 	}
-	return readFile(pngName.c_str(), buf);
+	it = textures.find(textureName);
+	if (it != textures.end()) {
+		memcpy(buf, it->second.data(), it->second.length());
+		return true;
+	}
+	return false;
 }
 
-bool ReplaceImageFile(const char* fn, const char* png) {
+#define tempAssetFile ((g_tempFile + ".assets").c_str())
+
+bool ReplaceImageFile(const char* fn, const char* png, const char* textureName) {
 	std::auto_ptr<char> pngBuf;
 	int pngWidth, pngHeight;
 	if (!readPng(png, pngBuf, pngWidth, pngHeight))
@@ -224,7 +264,7 @@ bool ReplaceImageFile(const char* fn, const char* png) {
 	AssetsFileTable assetsFileTable(&assetsFile);
 	for (DWORD i = 0; i<assetsFileTable.assetFileInfoCount; i++) {
 		auto assetFileInfoEx = assetsFileTable.pAssetFileInfo[i];
-		if (assetFileInfoEx.curFileType == 0x1c) {
+		if (assetFileInfoEx.curFileType == 0x1c && strcmp(assetFileInfoEx.name, textureName) == 0) {
 			AssetTypeTemplateField root;
 			auto pr = &root;
 			// texture2D
@@ -276,7 +316,7 @@ bool ReplaceImageFile(const char* fn, const char* png) {
 				FILE* fp;
 				// 修改assets file
 				auto newByteSize = rtv.Write(AssetsWriterToMemory, replacedParam, 0);
-				fopen_s(&fp, (g_tempFile + ".assets").c_str(), "wb");
+				fopen_s(&fp, tempAssetFile, "wb");
 				if (!fp) return false;
 				auto replacor = MakeAssetModifierFromMemory(0, assetFileInfoEx.index, assetFileInfoEx.curFileType, assetFileInfoEx.scriptIndex, replacedBuf.get(), newByteSize, NULL);
 				AssetsReplacer* replacors[1];
@@ -289,7 +329,7 @@ bool ReplaceImageFile(const char* fn, const char* png) {
 				FreeAssetsReplacer(replacor);
 				fclose(fp);
 				// 修改bundle file
-				fopen_s(&fp, (g_tempFile + ".assets").c_str(), "rb");
+				fopen_s(&fp, tempAssetFile, "rb");
 				if (!fp) return false;
 				fseek(fp, 0, SEEK_END);
 				auto length = ftell(fp);
@@ -297,7 +337,7 @@ bool ReplaceImageFile(const char* fn, const char* png) {
 				fseek(fp, 0, SEEK_SET);
 				fread(assetBuf.get(), 1, length, fp);
 				fclose(fp);
-				fopen_s(&fp, (g_tempFile + ".assets").c_str(), "wb");
+				fopen_s(&fp, tempAssetFile, "wb");
 				auto breplacor = MakeBundleEntryModifierFromMem(bf.bundleInf6->dirInf[0].name, bf.bundleInf6->dirInf[0].name, true, assetBuf.get(), length);
 				BundleReplacer* breplacers[1];
 				breplacers[0] = breplacor;
@@ -305,7 +345,7 @@ bool ReplaceImageFile(const char* fn, const char* png) {
 				FreeBundleReplacer(breplacor);
 				fclose(fp);
 				if (ret) {
-					postFix((g_tempFile + ".assets").c_str(), fn);
+					postFix(tempAssetFile, fn);
 				}
 #if 0
 				// 重新打包文件
