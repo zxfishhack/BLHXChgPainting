@@ -40,9 +40,11 @@ BOOL WINAPI DllMain(
 }
 
 void _cdecl verifyLog(char *message) {
+#ifdef _DEBUG
 	std::string msg(message);
 	msg += "\n";
 	OutputDebugStringA(msg.c_str());
+#endif
 }
 
 bool check_open(const char* fn_, file& f, bool& same) {
@@ -160,6 +162,7 @@ bool ExtraPngFile(const char* fn, const char* textureName) {
 std::string result;
 
 const char* GetTextureList(const char* fn) {
+	OutputDebugStringA(fn);
 	AssetsBundleFile bf;
 	file infile;
 	bool same;

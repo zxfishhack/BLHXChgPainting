@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace BLHXChgPainting
 {
@@ -123,7 +124,7 @@ namespace BLHXChgPainting
             return strMd5.ToLower();
         }
 
-        private async void Process(object sender, RoutedEventArgs e)
+        private void Process(object sender, RoutedEventArgs e)
         {
 #if (DEBUG)
             var debugOutput = "d:\\temp\\debug_output";
@@ -190,7 +191,7 @@ namespace BLHXChgPainting
             }
             else
             {
-                assetList[idx].AssetMd5 = await Md5Value(Vm.BundleFile);
+                assetList[idx].AssetMd5 = Md5Value(Vm.BundleFile).Result;
                 try
                 {
                     using (var f = File.Open(Vm.BundleFile, FileMode.Open))
@@ -327,6 +328,129 @@ namespace BLHXChgPainting
         {
             if (Vm.CurSel < 0 || Vm.CurSel >= Vm.TextureList.Count || loadList) return;
             LoadImageFromBundle(Vm.BundleFile, Vm.TextureList[Vm.CurSel]);
+        }
+
+        private void SelectFolders(string filename, IList<Node> childrens)
+        {
+            var dirInfo = new DirectoryInfo(filename);
+            var subDirectories = dirInfo.GetDirectories();
+            foreach (var directory in subDirectories)
+            {
+                var dir = new DirectoryNode
+                {
+                    Name = directory.Name,
+                    IsDir = true
+                };
+                childrens.Add(dir);
+                SelectFolders(directory.FullName, dir.Childrens);
+            }
+            var info = dirInfo.GetFiles("*.*");
+            foreach (var f in info)
+            {
+                var dof = new FileNode
+                {
+                    Name = f.Name,
+                    FullName = f.FullName,
+                    IsDir = false
+                };
+                childrens.Add(dof);
+            }
+        }
+
+        private void OpenForBroswer(object sender, RoutedEventArgs e)
+        {
+            var dlg = new CommonOpenFileDialog(@"打开游戏资源目录(AssetBundles)...") {IsFolderPicker = true};
+            if (dlg.ShowDialog() != CommonFileDialogResult.Ok) return;
+            Browser.DirPath = dlg.FileName;
+            SelectFolders(dlg.FileName, Browser.Root);
+        }
+
+        private void BrowserLoadImage()
+        {
+            var node = (Node)BrowserTree.SelectedItem;
+            if (node.IsDir) return;
+            var fnode = (FileNode)node;
+            var image = GetImageFromBundle(fnode.FullName, Browser.TextureList[Browser.CurSel]);
+            if (image == null)
+            {
+                MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            try
+            {
+                var img = new BitmapImage();
+                img.BeginInit();
+                img.StreamSource = new MemoryStream(image);
+                img.EndInit();
+                Browser.Img = img;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, "发生错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OnFileSelect(object sender, RoutedEventArgs ev)
+        {
+            var node = (Node)BrowserTree.SelectedItem;
+            if (node.IsDir) return;
+            var fnode = (FileNode) node;
+            Browser.ListLoading = true;
+            Browser.TextureList.Clear();
+            var lst = AssetTool.GetTextureList(fnode.FullName);
+            if (lst == IntPtr.Zero)
+            {
+                MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            var texLst = Marshal.PtrToStringAnsi(lst);
+            if (texLst == null)
+            {
+                MessageBox.Show("加载图片失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            foreach (var s in texLst.Split(','))
+            {
+                Browser.TextureList.Add(s);
+            }
+            Browser.CurSel = 0;
+            Browser.ListLoading = false;
+
+            BrowserLoadImage();
+        }
+
+        private void EditSelectedItem(object sender, RoutedEventArgs e)
+        {
+            var node = (Node)BrowserTree.SelectedItem;
+            if (node.IsDir) return;
+            var fnode = (FileNode)node;
+            if (!LoadImageFromBundle(fnode.FullName)) return;
+            MessageBox.Show("加载成功。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            Vm.BundleFile = fnode.FullName;
+            MainTabControl.SelectedIndex = 0;
+        }
+
+        private void BrowserSelctTexture(object sender, SelectionChangedEventArgs e)
+        {
+            if (Browser.ListLoading) return;
+            BrowserLoadImage();
+        }
+
+        private void ExportAll(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("全部导出时间较长，确定要继续吗？", "提示", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            var dlg = new CommonOpenFileDialog(@"选择输出路径...") { IsFolderPicker = true };
+            if (dlg.ShowDialog() != CommonFileDialogResult.Ok) return;
+            var inputBase = Browser.DirPath;
+            var outputBase = dlg.FileName;
+            if (inputBase == outputBase)
+            {
+                MessageBox.Show("输出文件夹不能与输入文件夹相同。", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            var progress = new Progress {Owner = this};
+            progress.BeginExport(inputBase, outputBase);
+            progress.ShowDialog();
         }
     }
 }

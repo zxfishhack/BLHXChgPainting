@@ -11,7 +11,7 @@ using System.Windows.Media.Imaging;
 
 namespace BLHXChgPainting
 {
-    class Vm : INotifyPropertyChanged
+    internal class Vm : INotifyPropertyChanged
     {
         private string _hashesPath = "";
         private string _bundlePath = "";

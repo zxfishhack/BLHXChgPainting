@@ -41,14 +41,6 @@ unsigned int _ntohl(unsigned int b) {
 	return a;
 }
 
-void batch_ntohl(void* from, void* to, size_t size) {
-	auto * from_ = (unsigned int*)from;
-	auto * to_ = (unsigned int*)to;
-	for(auto i=0; i<size; i++) {
-		to_[i] = _ntohl(from_[i]);
-	}
-}
-
 typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef short int16;
@@ -133,6 +125,32 @@ void ETC2RGBA8ToRGBA32(void *in, void* out, int width, int height) {
 	}
 }
 
+void RGBA2ARGB(void *in, void*out, size_t size) {
+	auto buf = static_cast<unsigned int*>(in), ret = static_cast<unsigned int*>(out);
+	for(auto i=0; i<size; i++) {
+		ret[i] = ((buf[i] << 8) & 0xffffff00) | ((buf[i] >> 24) & 0xff);
+	}
+}
+
+unsigned char rgb4_lut[16] = { 0, 16, 32, 51, 68, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 255};
+
+void RGBA42RGBA(void *in, void*out, size_t size) {
+	auto buf = static_cast<unsigned char*>(in);
+	auto ret = static_cast<unsigned char*>(out);
+
+	for (auto i = 0; i<size * 2; i++) {
+		ret[i * 2]     = rgb4_lut[buf[i] & 0xf];
+		ret[i * 2 + 1] = rgb4_lut[buf[i] >>4];
+	}
+}
+
+void ARGB2RGBA(void *in, void*out, size_t size) {
+	auto buf = static_cast<unsigned int*>(in), ret = static_cast<unsigned int*>(out);
+	for (auto i = 0; i<size; i++) {
+		ret[i] = ((buf[i] >> 8) & 0xffffff) | ((buf[i] & 0xff) << 24 );
+	}
+}
+
 void* convertTextureFormat(void* buf, int width, int height, bool& needFree, TextureFormat from, TextureFormat to) {
 	needFree = false;
 
@@ -148,7 +166,7 @@ void* convertTextureFormat(void* buf, int width, int height, bool& needFree, Tex
 			ret = malloc(width * height * 4);
 			needFree = true;
 
-			batch_ntohl(buf, ret, width * height);
+			ARGB2RGBA(buf, ret, width * height);
 		} else if (from == TexFmt_ETC2_RGBA8) {
 			auto size = width * height * 4;
 			ret = malloc(width * height * 4);
@@ -156,13 +174,24 @@ void* convertTextureFormat(void* buf, int width, int height, bool& needFree, Tex
 
 			ETC2RGBA8ToRGBA32(buf, ret, width, height);
 		} else if (from == TexFmt_ETC2_RGB4) {
-#if 1
 			auto size = width * height * 4;
 			ret = malloc(width * height * 4);
 			needFree = true;
 
 			ETC2RGB4ToRGBA32(buf, ret, width, height);
-#endif
+		}
+		//else if (from == TexFmt_RGBA4444) {
+		//	//TODO 使用更好的转换方式
+		//	auto size = width * height * 4;
+		//	ret = malloc(width * height * 4);
+		//	needFree = true;
+
+		//	RGBA42RGBA(buf, ret, width * height);
+		//} 
+		else {
+			char szTemp[1024];
+			sprintf_s(szTemp, "unsupport from format %d\n", from);
+			OutputDebugStringA(szTemp);
 		}
 	} else if (to == TexFmt_ARGB32) {
 		if (from == TexFmt_RGBA32) {
@@ -170,7 +199,7 @@ void* convertTextureFormat(void* buf, int width, int height, bool& needFree, Tex
 			ret = malloc(width * height * 4);
 			needFree = true;
 
-			batch_ntohl(buf, ret, width * height);
+			RGBA2ARGB(buf, ret, width * height);
 		}
 	}
 
