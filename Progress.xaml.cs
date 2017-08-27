@@ -35,20 +35,15 @@ namespace BLHXChgPainting
         private int _counter = 0;
         private bool _isStop = false;
 
-        private static Task RecursCreateDirectory(string inputBase, string outputBase)
+        private static void RecursCreateDirectory(string inputBase, string outputBase)
         {
-            return Task.Run(() =>
+            var dirInfo = new DirectoryInfo(inputBase);
+            var subDirectories = dirInfo.GetDirectories();
+            foreach (var dir in subDirectories)
             {
-                var dirInfo = new DirectoryInfo(inputBase);
-                var subDirectories = dirInfo.GetDirectories();
-                var taskes = new Task[subDirectories.Length];
-                for (var i = 0; i < subDirectories.Length; i++)
-                {
-                    Directory.CreateDirectory(outputBase + "\\" + subDirectories[i].Name);
-                    taskes[i] = RecursCreateDirectory(subDirectories[i].FullName, outputBase + "\\" + dirInfo.Name);
-                }
-                Task.WaitAll(taskes);
-            });
+                Directory.CreateDirectory($"{outputBase}\\{dir.Name}");
+                RecursCreateDirectory(dir.FullName, $"{outputBase}\\{dir.Name}");
+            }
         }
 
         private void ProcessFile(string input, string outputPrefix)
@@ -127,8 +122,8 @@ namespace BLHXChgPainting
             {
                 var counters = CountFiles(inputBase);
                 // 先建立所有文件夹
-                var creators = RecursCreateDirectory(inputBase, outputBase);
-                Task.WaitAll(counters, creators);
+                RecursCreateDirectory(inputBase, outputBase);
+                Task.WaitAll(counters);
                 ExportProgress.Total = _counter;
                 // 开始处理任务
                 RecursProcess(inputBase, outputBase);
