@@ -111,7 +111,20 @@ namespace BLHXChgPainting
             
         }
 
-        private static async Task<string> Md5Value(string fileName)
+        private static string Md5Value(string fileName)
+        {
+            MD5 md5 = new MD5CryptoServiceProvider();
+            if (!File.Exists(fileName))
+                return string.Empty;
+            var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+            var md5Ch = md5.ComputeHash(fs);
+            fs.Close();
+            md5.Clear();
+            var strMd5 = md5Ch.Aggregate("", (current, b) => current + b.ToString("x").PadLeft(2, '0'));
+            return strMd5.ToLower();
+        }
+
+        private static async Task<string> Md5ValueAsync(string fileName)
         {
             MD5 md5 = new MD5CryptoServiceProvider();
             if (!File.Exists(fileName))
@@ -191,7 +204,7 @@ namespace BLHXChgPainting
             }
             else
             {
-                assetList[idx].AssetMd5 = Md5Value(Vm.BundleFile).Result;
+                assetList[idx].AssetMd5 = Md5Value(Vm.BundleFile);
                 try
                 {
                     using (var f = File.Open(Vm.BundleFile, FileMode.Open))

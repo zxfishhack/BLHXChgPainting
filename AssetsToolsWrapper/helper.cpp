@@ -3,8 +3,12 @@
 #include "helper.h"
 #include <memory>
 #include "AssetsTools/AssetTypeClass.h"
+#include "endian_rw.h"
 #include <iomanip>
 #include <sstream>
+#include "lz4/lz4hc.h"
+#include "lzma/LzmaEnc.h"
+#include "lzma/Alloc.h"
 
 QWORD _cdecl writer(QWORD pos, QWORD count, const void *pBuf, LPARAM par) {
 	if (memcmp(pBuf, "CAB-", 4) == 0) {
@@ -41,171 +45,7 @@ unsigned int _ntohl(unsigned int b) {
 	return a;
 }
 
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef short int16;
-void decompressBlockAlphaC(uint8* data, uint8* img, int width, int height, int ix, int iy, int channels);
-void decompressBlockETC2c(unsigned int block_part1, unsigned int block_part2, uint8 *img, int width, int height, int startx, int starty, int channels);
-
-// read color block from data stream
-void readColorBlockETC(byte **stream, unsigned int &block1, unsigned int &block2)
-{
-	byte *data = *stream;
-	block1 = 0;           block1 |= data[0];
-	block1 = block1 << 8; block1 |= data[1];
-	block1 = block1 << 8; block1 |= data[2];
-	block1 = block1 << 8; block1 |= data[3];
-	block2 = 0;           block2 |= data[4];
-	block2 = block2 << 8; block2 |= data[5];
-	block2 = block2 << 8; block2 |= data[6];
-	block2 = block2 << 8; block2 |= data[7];
-	*stream = data + 8;
-}
-
-void ETC2RGB4ToRGBA32(void *in, void* out, int width, int height) {
-	byte *data, *stream, rgba[4 * 4 * 4], *lb;
-	unsigned int block1, block2;
-	int x, y, w, h, bpp;
-	int lx, ly, lw, lh;
-
-	// init
-	w = width;
-	h = height;
-	bpp = 4;
-	data = (byte*)out;
-	stream = (byte*)in;
-
-	for (y = 0; y < h; y += 4)
-	{
-		for (x = 0; x < w; x += 4)
-		{
-			readColorBlockETC(&stream, block1, block2);
-			decompressBlockETC2c(block1, block2, rgba, 4, 4, 0, 0, 4);
-			lb = rgba;
-			lh = min(y + 4, h) - y;
-			lw = min(x + 4, w) - x;
-			for (ly = 0; ly < lh; ly++, lb += 4 * 4)
-				for (lx = 0; lx < lw; lx++) {
-					memcpy(data + (w*(y + ly) + x + lx)*bpp, lb + lx * 4, 3);
-					data[(w*(y + ly) + x + lx)*bpp + 3] = 255;
-				}
-		}
-	}
-}
-
-void ETC2RGBA8ToRGBA32(void *in, void* out, int width, int height) {
-	byte *data, *stream, rgba[4 * 4 * 4], *lb;
-	unsigned int block1, block2;
-	int x, y, w, h, bpp;
-	int lx, ly, lw, lh;
-
-	// init
-	w = width;
-	h = height;
-	bpp = 4;
-	data = (byte*)out;
-	stream = (byte*)in;
-
-	for (y = 0; y < h; y += 4)
-	{
-		for (x = 0; x < w; x += 4)
-		{
-			// EAC block + ETC2 RGB block
-			decompressBlockAlphaC(stream, rgba + 3, 4, 4, 0, 0, 4);
-			stream += 8;
-			readColorBlockETC(&stream, block1, block2);
-			decompressBlockETC2c(block1, block2, rgba, 4, 4, 0, 0, 4);
-			lb = rgba;
-			lh = min(y + 4, h) - y;
-			lw = min(x + 4, w) - x;
-			for (ly = 0; ly < lh; ly++, lb += 4 * 4)
-				for (lx = 0; lx < lw; lx++)
-					memcpy(data + (w*(y + ly) + x + lx)*bpp, lb + lx * 4, 4);
-		}
-	}
-}
-
-void RGBA2ARGB(void *in, void*out, size_t size) {
-	auto buf = static_cast<unsigned int*>(in), ret = static_cast<unsigned int*>(out);
-	for(auto i=0; i<size; i++) {
-		ret[i] = ((buf[i] << 8) & 0xffffff00) | ((buf[i] >> 24) & 0xff);
-	}
-}
-
-unsigned char rgb4_lut[16] = { 0, 16, 32, 51, 68, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 255};
-
-void RGBA42RGBA(void *in, void*out, size_t size) {
-	auto buf = static_cast<unsigned char*>(in);
-	auto ret = static_cast<unsigned char*>(out);
-
-	for (auto i = 0; i<size * 2; i++) {
-		ret[i * 2]     = rgb4_lut[buf[i] & 0xf];
-		ret[i * 2 + 1] = rgb4_lut[buf[i] >>4];
-	}
-}
-
-void ARGB2RGBA(void *in, void*out, size_t size) {
-	auto buf = static_cast<unsigned int*>(in), ret = static_cast<unsigned int*>(out);
-	for (auto i = 0; i<size; i++) {
-		ret[i] = ((buf[i] >> 8) & 0xffffff) | ((buf[i] & 0xff) << 24 );
-	}
-}
-
-void* convertTextureFormat(void* buf, int width, int height, bool& needFree, TextureFormat from, TextureFormat to) {
-	needFree = false;
-
-	if (from == to) {
-		return buf;
-	}
-
-	void* ret = NULL;
-
-	if (to == TexFmt_RGBA32) {
-		if (from == TexFmt_ARGB32) {
-			auto size = width * height * 4;
-			ret = malloc(width * height * 4);
-			needFree = true;
-
-			ARGB2RGBA(buf, ret, width * height);
-		} else if (from == TexFmt_ETC2_RGBA8) {
-			auto size = width * height * 4;
-			ret = malloc(width * height * 4);
-			needFree = true;
-
-			ETC2RGBA8ToRGBA32(buf, ret, width, height);
-		} else if (from == TexFmt_ETC2_RGB4) {
-			auto size = width * height * 4;
-			ret = malloc(width * height * 4);
-			needFree = true;
-
-			ETC2RGB4ToRGBA32(buf, ret, width, height);
-		}
-		//else if (from == TexFmt_RGBA4444) {
-		//	//TODO 使用更好的转换方式
-		//	auto size = width * height * 4;
-		//	ret = malloc(width * height * 4);
-		//	needFree = true;
-
-		//	RGBA42RGBA(buf, ret, width * height);
-		//} 
-		else {
-			char szTemp[1024];
-			sprintf_s(szTemp, "unsupport from format %d\n", from);
-			OutputDebugStringA(szTemp);
-		}
-	} else if (to == TexFmt_ARGB32) {
-		if (from == TexFmt_RGBA32) {
-			auto size = width * height * 4;
-			ret = malloc(width * height * 4);
-			needFree = true;
-
-			RGBA2ARGB(buf, ret, width * height);
-		}
-	}
-
-	return ret;
-}
-
+void* convertTextureFormat(void* buf, int width, int height, bool& needFree, TextureFormat from, TextureFormat to);
 
 bool getPngBuf(std::auto_ptr<char> &pngBuf, size_t& size, void * buf, int width, int height, TextureFormat format) {
 	FILE* fp = NULL;
@@ -416,25 +256,6 @@ void dfs(AssetTypeValueField* tv, int offset, int step) {
 	}
 }
 
-bool repack(const char * src, const char* dst) {
-	FILE* fp;
-	auto ret = false;
-	do {
-		fopen_s(&fp, dst, "wb");
-		if (!fp) break;
-		file f;
-		if (!f.open(src)) break;
-		AssetsBundleFile bf;
-		ret = bf.Pack(file::reader, f, writer, LPARAM(fp));
-	} while (false);
-
-	if (fp) {
-		fclose(fp);
-	}
-
-	return ret;
-}
-
 void inc(char*& dst, char*& src, size_t size) {
 	dst += size;
 	src += size;
@@ -445,46 +266,190 @@ void scp(char*& dst, char*& src, size_t size) {
 	inc(dst, src, size);
 }
 
-void postFix(const char *srcFile, const char *dstFile) {
-	FILE* fp = NULL;
+struct BlockInfo {
+	uint32_t decompressedSize, compressedSize;
+	uint16_t flag;
+};
+
+struct NodeInfo {
+	uint64_t offset, size;
+	uint32_t status;
+	std::string name;
+};
+
+bool compressBlocks(std::istream& stream, const BlockInfo& block, const NodeInfo& node, std::string &blockBuffer, BlockInfo& outputBlock);
+
+bool tryPackFile(const char *srcFile, const char *dstFile) {
+	// 仅处理只有一个AssetBundle的问题
+	std::ifstream src;
+	std::ofstream dst;
+	auto ret = false;
+	src.open(srcFile, std::ios::binary);
+	dst.open(dstFile, std::ios::binary);
 	do {
-		fopen_s(&fp, srcFile, "rb");
-		if (!fp) break;
-		fseek(fp, 0, SEEK_END);
-		auto length = ftell(fp);
-		auto remain = length;
-		std::auto_ptr<char> buf(new char[length]);
-		auto src = buf.get();
-		// 原因未知，使用AssetsTool.dll重新打包的文件，会多三个字节
-		std::auto_ptr<char> outBuf(new char[length - 3]);
-		auto dst = outBuf.get();
-		fseek(fp, 0, SEEK_SET);
-		fread(buf.get(), 1, length, fp);
-		fclose(fp);
-		scp(dst, src, 0x1e);
-		remain -= 0x1e;
-		// 调整大小
-		auto size = _ntohl(*(unsigned int*)(buf.get() + 0x1e));
-		size -= 3;
-		size = _ntohl(size);
-		memcpy(dst, &size, 4);
-		remain -= 4;
-		inc(src, dst, 4);
-		scp(dst, src, 53);
-		remain -= 53;
-		*dst = 0;
-		remain -= 1;
-		//skip 03
-		inc(dst, src, 1);
-		scp(dst, src, 49);
-		remain -= 49;
-		//跳过多余的三个字节
-		src += 3;
-		remain -= 3;
-		scp(dst, src, remain);
-		fopen_s(&fp, dstFile, "wb");
-		if (!fp) break;
-		fwrite(outBuf.get(), 1, length - 3, fp);
-		fclose(fp);
+		if (!src.is_open()) break;
+		std::string sig, unity, generator;
+		uint32_t fileVersion;
+		uint64_t fileSize;
+		int32_t compressedSize, decompressedSize;
+		uint32_t flag;
+
+		src > sig;
+		src > fileVersion;
+		src > unity;
+		src > generator;
+		src > fileSize;
+		src > compressedSize;
+		src > decompressedSize;
+		src > flag;
+
+		auto compressType = flag & 0x3f;
+		if (compressType != 0) {
+			ret = copy(src, dst);
+			break;
+		}
+		// 压缩文件
+		auto needBack = false;
+		auto backPos = src.tellg();
+		if (flag & 0x80) {
+			src.seekg(-compressedSize, std::ios::end);
+			needBack = true;
+		}
+		char guid[16];
+		src.read(guid, 16);
+		int32_t blockNum;
+		src > blockNum;
+		std::vector<BlockInfo> blocks;
+		for(auto i=0; i<blockNum; i++) {
+			BlockInfo block;
+			src > block.compressedSize;
+			src > block.decompressedSize;
+			src > block.flag;
+			blocks.push_back(block);
+		}
+
+		int32_t nodeNum;
+		src > nodeNum;
+		std::vector<NodeInfo> nodes;
+		for(auto i=0; i<nodeNum; i++) {
+			NodeInfo node;
+			src > node.offset;
+			src > node.size;
+			src > node.status;
+			src > node.name;
+			nodes.push_back(node);
+		}
+		if (nodeNum != 1 || blockNum != 1 || nodeNum != blockNum) {
+			ret = copy(src, dst);
+			break;
+		}
+		// 压缩并输出文件
+		std::string blockBuffer;
+		if (needBack) {
+			src.seekg(backPos, std::ios::beg);
+		}
+
+		auto& node = nodes[0];
+		auto& block = blocks[0];
+
+		BlockInfo outputBlock;
+		
+		if (!compressBlocks(src, block, node, blockBuffer, outputBlock)) {
+			break;
+		}
+		
+		dst > sig;
+		dst.put(0);
+		dst > fileVersion;
+		dst > unity;
+		dst.put(0);
+		dst > generator;
+		dst.put(0);
+
+		flag = 0x43; //接在头后，使用lz4压缩
+		node.offset = 0;
+		node.size = outputBlock.decompressedSize;
+
+		std::ostringstream dirBuffer;
+		nodeNum = 1;
+		blockNum = 1;
+		dirBuffer.write(guid, 16);
+		dirBuffer > blockNum;
+		dirBuffer > outputBlock.decompressedSize;
+		dirBuffer > outputBlock.compressedSize;
+		dirBuffer > outputBlock.flag;
+		dirBuffer > nodeNum;
+		dirBuffer > node.offset;
+		dirBuffer > node.size;
+		dirBuffer > node.status;
+		dirBuffer > node.name;
+		dirBuffer.put(0);
+
+		decompressedSize = dirBuffer.str().length();
+		std::string compressDir;
+		compressDir.resize(decompressedSize);
+		compressedSize = LZ4_compress_HC(dirBuffer.str().data(), (char*)compressDir.data(), decompressedSize, decompressedSize, LZ4HC_CLEVEL_DEFAULT);
+
+		fileSize = uint64_t(dst.tellp()) + sizeof(fileSize) + sizeof(compressedSize) + sizeof(decompressedSize)
+			+ sizeof(flag) + compressedSize + blockBuffer.length();
+		dst > fileSize;
+		dst > compressedSize;
+		dst > decompressedSize;
+		dst > flag;
+		// 输出目录
+		dst.write(compressDir.data(), compressedSize);
+		// 输出块信息
+		dst > blockBuffer;
+		ret = true;
 	} while (false);
+
+	return ret;
+}
+
+bool compressBlocks(std::istream& stream, const BlockInfo& block, const NodeInfo& node, std::string &blockBuffer, BlockInfo& outputBlock) {
+	outputBlock.decompressedSize = block.decompressedSize;
+	outputBlock.flag = 0x41;
+	std::string src, dst;
+	src.resize(outputBlock.decompressedSize);
+	dst.resize(outputBlock.decompressedSize);
+	auto ret = false;
+	blockBuffer.clear();
+
+	stream.seekg(node.offset, std::ios::cur);
+	auto remain = block.decompressedSize;
+	CLzmaEncProps props;
+	auto enc = LzmaEnc_Create(&g_Alloc);
+	if (enc == 0) {
+		return ret;
+	}
+	LzmaEncProps_Init(&props);
+	props.level = 9;
+	props.lc = 3;
+	props.lp = 0;
+	props.pb = 2;
+	props.dictSize = 0x80000;
+	auto res = LzmaEnc_SetProps(enc, &props);
+
+	if (res != SZ_OK) {
+		return ret;
+	}
+
+	do {
+		Byte header[LZMA_PROPS_SIZE + 8];
+		size_t headerSize = LZMA_PROPS_SIZE;
+		res = LzmaEnc_WriteProperties(enc, header, &headerSize);
+		blockBuffer.append((char*)header, headerSize);
+		SizeT dstSize = block.decompressedSize;
+		stream.read((char*)src.data(), block.decompressedSize);
+		res = LzmaEnc_MemEncode(enc, (Byte*)dst.data(), &dstSize, (Byte*)src.data(), block.decompressedSize, 0, NULL, &g_Alloc, &g_Alloc);
+		blockBuffer.append(dst.data(), dstSize);
+		ret = res == SZ_OK;
+	} while (false);
+
+	if (enc) {
+		LzmaEnc_Destroy(enc, &g_Alloc, &g_Alloc);
+	}
+
+	outputBlock.compressedSize = blockBuffer.length();
+	return ret;
 }

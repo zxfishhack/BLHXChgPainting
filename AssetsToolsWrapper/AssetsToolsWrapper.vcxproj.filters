@@ -13,6 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\lz4">
+      <UniqueIdentifier>{9a91ff8b-7098-47d9-bdd6-cd4964ae6ba9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\lzma">
+      <UniqueIdentifier>{fe7b0618-f59e-4f36-8afc-0c9dd9907686}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\AssetsTool">
+      <UniqueIdentifier>{34e8e79f-e5a4-4d35-8b0d-6e14ad759896}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -30,6 +39,144 @@
     <ClCompile Include="etcdec.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lz4\lz4.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\lz4frame.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\lz4hc.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="lz4\xxhash.c">
+      <Filter>Source Files\lz4</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zAlloc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zArcIn.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zBuf.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zBuf2.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zCrc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zCrcOpt.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zDec.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zFile.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\7zStream.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Aes.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\AesOpt.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Alloc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Bcj2.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Bcj2Enc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Bra.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Bra86.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\BraIA64.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\CpuArch.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Delta.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\DllSecur.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzFind.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzFindMt.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Lzma2Dec.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Lzma2Enc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Lzma86Dec.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Lzma86Enc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzmaDec.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzmaEnc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\LzmaLib.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\MtCoder.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Ppmd7.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Ppmd7Dec.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Ppmd7Enc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Sha256.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Sort.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Threads.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\Xz.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\XzCrc64.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\XzCrc64Opt.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\XzDec.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\XzEnc.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
+    <ClCompile Include="lzma\XzIn.c">
+      <Filter>Source Files\lzma</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def">
@@ -37,53 +184,184 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\AssetsTools\AssetBundleFileTable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\AssetsBundleFileFormat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\AssetsFileFormat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\AssetsFileReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\AssetsFileTable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\AssetsReplacer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\AssetTypeClass.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\BundleReplacer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\ClassDatabaseFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\defines.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\ResourceManagerFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\AssetsTools\TextureFileFormat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="md5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="color_process.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="lz4\lz4.h">
+      <Filter>Source Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4frame.h">
+      <Filter>Source Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4frame_static.h">
+      <Filter>Source Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4hc.h">
+      <Filter>Source Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\lz4opt.h">
+      <Filter>Source Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lz4\xxhash.h">
+      <Filter>Source Files\lz4</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7z.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7zAlloc.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7zBuf.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7zCrc.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7zFile.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7zTypes.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\7zVersion.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Aes.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Alloc.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Bcj2.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Bra.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Compiler.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\CpuArch.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Delta.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\DllSecur.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzFind.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzFindMt.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzHash.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Lzma2Dec.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Lzma2Enc.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Lzma86.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzmaDec.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzmaEnc.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\LzmaLib.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\MtCoder.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Ppmd.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Ppmd7.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Precomp.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\RotateDefs.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Sha256.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Sort.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Threads.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\Xz.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\XzCrc64.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="lzma\XzEnc.h">
+      <Filter>Source Files\lzma</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetBundleFileTable.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetsBundleFileFormat.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetsFileFormat.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetsFileReader.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetsFileTable.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetsReplacer.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\AssetTypeClass.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\BundleReplacer.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\ClassDatabaseFile.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\defines.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\ResourceManagerFile.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\AssetsTools\TextureFileFormat.h">
+      <Filter>Header Files\AssetsTool</Filter>
+    </ClInclude>
     <ClInclude Include="helper.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="endian_rw.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\AssetsTools.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="lzma\7zVersion.rc">
+      <Filter>Source Files\lzma</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

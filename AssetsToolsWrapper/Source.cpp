@@ -15,6 +15,7 @@
 #include "helper.h"
 #include <map>
 #include "AssetsTools/TextureFileFormat.h"
+#include "lz4/lz4hc.h"
 
 std::string g_curHash, g_lastHash;
 std::string g_tempFile;
@@ -47,35 +48,37 @@ void _cdecl verifyLog(char *message) {
 #endif
 }
 
+void safe_close(FILE* fp) {
+	if (fp) {
+		fclose(fp);
+		fp = NULL;
+	}
+}
+
 bool check_open(const char* fn_, file& f, bool& same) {
 	std::string fn(fn_);
 	AssetsBundleFile bf;
 	auto ret = false;
+	FILE* fo = NULL;
 	do {
 		if (!f.open(fn_) || !bf.Read(file::reader, f, verifyLog, true))
 			break;
 		g_curHash = f.md5;
 		if (bf.bundleHeader6.compressedSize != bf.bundleHeader6.decompressedSize) {
-			FILE* fo = NULL;
+			
 			fn = g_tempFile;
 			fopen_s(&fo, fn.c_str(), "rb");
 			if (g_curHash == g_lastHash && fo) {
-				fclose(fo);
 				ret = f.open(fn.c_str());
 				break;
 			}
-			if (fo) {
-				fclose(fo);
-			}
+			safe_close(fo);
 			fopen_s(&fo, fn.c_str(), "wb");
 			if (!fo)
 				break;
 			if (!bf.Unpack(file::reader, f, writer, LPARAM(fo)))
 				break;
-			if (fo) {
-				fclose(fo);
-			}
-			repack(fn.c_str(), "d:\\test_enc_tex");
+			safe_close(fo);
 			ret = f.open(fn.c_str());
 		} else {
 			ret = true;
@@ -88,6 +91,7 @@ bool check_open(const char* fn_, file& f, bool& same) {
 		g_curHash = "1";
 		g_lastHash = "2";
 	}
+	safe_close(fo);
 	return ret;
 }
 
@@ -344,25 +348,17 @@ bool ReplaceImageFile(const char* fn, const char* png, const char* textureName) 
 				fseek(fp, 0, SEEK_SET);
 				fread(assetBuf.get(), 1, length, fp);
 				fclose(fp);
-				fopen_s(&fp, tempAssetFile, "wb");
-				auto breplacor = MakeBundleEntryModifierFromMem(bf.bundleInf6->dirInf[0].name, bf.bundleInf6->dirInf[0].name, true, assetBuf.get(), length);
-				BundleReplacer* breplacers[1];
-				breplacers[0] = breplacor;
-				auto ret = bf.Write(file::reader, infile, writer, LPARAM(fp), breplacers, 1, verifyLog);
-				FreeBundleReplacer(breplacor);
-				fclose(fp);
-				if (ret) {
-					postFix(tempAssetFile, fn);
+				auto bundleReplacer = MakeBundleEntryModifierFromMem(bf.bundleInf6->dirInf[0].name, bf.bundleInf6->dirInf[0].name, true, assetBuf.get(), length);
+				if (bundleReplacer == NULL) {
+					return false;
 				}
-#if 0
-				// 重新打包文件
-				fopen_s(&fp, fn, "wb");
-				file f;
-				f.open((g_tempFile + ".assets").c_str());
-				AssetsBundleFile bf2;
-				auto ret = bf2.Pack(file::reader, f, writer, LPARAM(fp));
+				BundleReplacer* breplacers[1];
+				breplacers[0] = bundleReplacer;
+				fopen_s(&fp, tempAssetFile, "wb");
+				auto ret = bf.Write(file::reader, infile, writer, LPARAM(fp), breplacers, 1, verifyLog);
+				FreeBundleReplacer(bundleReplacer);
 				fclose(fp);
-#endif
+				ret = ret && tryPackFile(tempAssetFile, fn);
 				return ret;
 			}
 		}

@@ -1,6 +1,7 @@
 #include "color_process.h"
 #include <cmath>
 #include <cassert>
+#include "AssetsTools/TextureFileFormat.h"
 
 template<typename T>
 T mix(T l, T r, T m) {
@@ -104,4 +105,172 @@ void decode(void* _img, int width, int height) {
 	}
 }
 
+}
+
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef short int16;
+void decompressBlockAlphaC(uint8* data, uint8* img, int width, int height, int ix, int iy, int channels);
+void decompressBlockETC2c(unsigned int block_part1, unsigned int block_part2, uint8 *img, int width, int height, int startx, int starty, int channels);
+
+// read color block from data stream
+void readColorBlockETC(byte **stream, unsigned int &block1, unsigned int &block2)
+{
+	byte *data = *stream;
+	block1 = 0;           block1 |= data[0];
+	block1 = block1 << 8; block1 |= data[1];
+	block1 = block1 << 8; block1 |= data[2];
+	block1 = block1 << 8; block1 |= data[3];
+	block2 = 0;           block2 |= data[4];
+	block2 = block2 << 8; block2 |= data[5];
+	block2 = block2 << 8; block2 |= data[6];
+	block2 = block2 << 8; block2 |= data[7];
+	*stream = data + 8;
+}
+
+void ETC2RGB4ToRGBA32(void *in, void* out, int width, int height) {
+	byte *data, *stream, rgba[4 * 4 * 4], *lb;
+	unsigned int block1, block2;
+	int x, y, w, h, bpp;
+	int lx, ly, lw, lh;
+
+	// init
+	w = width;
+	h = height;
+	bpp = 4;
+	data = (byte*)out;
+	stream = (byte*)in;
+
+	for (y = 0; y < h; y += 4)
+	{
+		for (x = 0; x < w; x += 4)
+		{
+			readColorBlockETC(&stream, block1, block2);
+			decompressBlockETC2c(block1, block2, rgba, 4, 4, 0, 0, 4);
+			lb = rgba;
+			lh = min(y + 4, h) - y;
+			lw = min(x + 4, w) - x;
+			for (ly = 0; ly < lh; ly++, lb += 4 * 4)
+				for (lx = 0; lx < lw; lx++) {
+					memcpy(data + (w*(y + ly) + x + lx)*bpp, lb + lx * 4, 3);
+					data[(w*(y + ly) + x + lx)*bpp + 3] = 255;
+				}
+		}
+	}
+}
+
+void ETC2RGBA8ToRGBA32(void *in, void* out, int width, int height) {
+	byte *data, *stream, rgba[4 * 4 * 4], *lb;
+	unsigned int block1, block2;
+	int x, y, w, h, bpp;
+	int lx, ly, lw, lh;
+
+	// init
+	w = width;
+	h = height;
+	bpp = 4;
+	data = (byte*)out;
+	stream = (byte*)in;
+
+	for (y = 0; y < h; y += 4)
+	{
+		for (x = 0; x < w; x += 4)
+		{
+			// EAC block + ETC2 RGB block
+			decompressBlockAlphaC(stream, rgba + 3, 4, 4, 0, 0, 4);
+			stream += 8;
+			readColorBlockETC(&stream, block1, block2);
+			decompressBlockETC2c(block1, block2, rgba, 4, 4, 0, 0, 4);
+			lb = rgba;
+			lh = min(y + 4, h) - y;
+			lw = min(x + 4, w) - x;
+			for (ly = 0; ly < lh; ly++, lb += 4 * 4)
+				for (lx = 0; lx < lw; lx++)
+					memcpy(data + (w*(y + ly) + x + lx)*bpp, lb + lx * 4, 4);
+		}
+	}
+}
+
+void RGBA2ARGB(void *in, void*out, size_t size) {
+	auto buf = static_cast<unsigned int*>(in), ret = static_cast<unsigned int*>(out);
+	for (auto i = 0; i<size; i++) {
+		ret[i] = ((buf[i] << 8) & 0xffffff00) | ((buf[i] >> 24) & 0xff);
+	}
+}
+
+unsigned char rgb4_lut[16] = { 0, 16, 32, 51, 68, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 255 };
+
+void RGBA42RGBA(void *in, void*out, size_t size) {
+	auto buf = static_cast<unsigned char*>(in);
+	auto ret = static_cast<unsigned char*>(out);
+
+	for (auto i = 0; i<size * 2; i++) {
+		ret[i * 2] = rgb4_lut[buf[i] & 0xf];
+		ret[i * 2 + 1] = rgb4_lut[buf[i] >> 4];
+	}
+}
+
+void ARGB2RGBA(void *in, void*out, size_t size) {
+	auto buf = static_cast<unsigned int*>(in), ret = static_cast<unsigned int*>(out);
+	for (auto i = 0; i<size; i++) {
+		ret[i] = ((buf[i] >> 8) & 0xffffff) | ((buf[i] & 0xff) << 24);
+	}
+}
+
+void* convertTextureFormat(void* buf, int width, int height, bool& needFree, TextureFormat from, TextureFormat to) {
+	needFree = false;
+
+	if (from == to) {
+		return buf;
+	}
+
+	void* ret = NULL;
+
+	if (to == TexFmt_RGBA32) {
+		if (from == TexFmt_ARGB32) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			ARGB2RGBA(buf, ret, width * height);
+		}
+		else if (from == TexFmt_ETC2_RGBA8) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			ETC2RGBA8ToRGBA32(buf, ret, width, height);
+		}
+		else if (from == TexFmt_ETC2_RGB4) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			ETC2RGB4ToRGBA32(buf, ret, width, height);
+		}
+		//else if (from == TexFmt_RGBA4444) {
+		//	//TODO 使用更好的转换方式
+		//	auto size = width * height * 4;
+		//	ret = malloc(width * height * 4);
+		//	needFree = true;
+
+		//	RGBA42RGBA(buf, ret, width * height);
+		//} 
+		else {
+			char szTemp[1024];
+			sprintf_s(szTemp, "unsupport from format %d\n", from);
+			OutputDebugStringA(szTemp);
+		}
+	}
+	else if (to == TexFmt_ARGB32) {
+		if (from == TexFmt_RGBA32) {
+			auto size = width * height * 4;
+			ret = malloc(width * height * 4);
+			needFree = true;
+
+			RGBA2ARGB(buf, ret, width * height);
+		}
+	}
+
+	return ret;
 }

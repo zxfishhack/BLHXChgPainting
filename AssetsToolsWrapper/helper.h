@@ -103,6 +103,4 @@ void memcpy2D(void *dst_, size_t dstPitch, void *src_, size_t srcPitch, size_t s
 
 void dfs(AssetTypeValueField* tv, int offset, int step = 3);
 
-bool repack(const char* src, const char* dst);
-
-void postFix(const char* src, const char* dst);
+bool tryPackFile(const char *src, const char *dst);

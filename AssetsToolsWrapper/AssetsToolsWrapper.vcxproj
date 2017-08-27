@@ -59,10 +59,11 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <PreprocessorDefinitions>WIN64;_DEBUG;_WINDOWS;_USRDLL;ASSETSTOOLSWRAPPER_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -75,7 +76,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <Optimization>Disabled</Optimization>
+      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN64;NDEBUG;_WINDOWS;_USRDLL;ASSETSTOOLSWRAPPER_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -93,15 +94,67 @@
   <ItemGroup>
     <ClCompile Include="color_process.cpp" />
     <ClCompile Include="etcdec.cxx" />
-    <ClCompile Include="helper.cpp" />
+    <ClCompile Include="helper.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="lz4\lz4.c" />
+    <ClCompile Include="lz4\lz4frame.c" />
+    <ClCompile Include="lz4\lz4hc.c" />
+    <ClCompile Include="lz4\xxhash.c" />
+    <ClCompile Include="lzma\7zAlloc.c" />
+    <ClCompile Include="lzma\7zArcIn.c" />
+    <ClCompile Include="lzma\7zBuf.c" />
+    <ClCompile Include="lzma\7zBuf2.c" />
+    <ClCompile Include="lzma\7zCrc.c" />
+    <ClCompile Include="lzma\7zCrcOpt.c" />
+    <ClCompile Include="lzma\7zDec.c" />
+    <ClCompile Include="lzma\7zFile.c" />
+    <ClCompile Include="lzma\7zStream.c" />
+    <ClCompile Include="lzma\Aes.c" />
+    <ClCompile Include="lzma\AesOpt.c" />
+    <ClCompile Include="lzma\Alloc.c" />
+    <ClCompile Include="lzma\Bcj2.c" />
+    <ClCompile Include="lzma\Bcj2Enc.c" />
+    <ClCompile Include="lzma\Bra.c" />
+    <ClCompile Include="lzma\Bra86.c" />
+    <ClCompile Include="lzma\BraIA64.c" />
+    <ClCompile Include="lzma\CpuArch.c" />
+    <ClCompile Include="lzma\Delta.c" />
+    <ClCompile Include="lzma\DllSecur.c" />
+    <ClCompile Include="lzma\LzFind.c" />
+    <ClCompile Include="lzma\LzFindMt.c" />
+    <ClCompile Include="lzma\Lzma2Dec.c" />
+    <ClCompile Include="lzma\Lzma2Enc.c" />
+    <ClCompile Include="lzma\Lzma86Dec.c" />
+    <ClCompile Include="lzma\Lzma86Enc.c" />
+    <ClCompile Include="lzma\LzmaDec.c" />
+    <ClCompile Include="lzma\LzmaEnc.c" />
+    <ClCompile Include="lzma\LzmaLib.c" />
+    <ClCompile Include="lzma\MtCoder.c" />
+    <ClCompile Include="lzma\Ppmd7.c" />
+    <ClCompile Include="lzma\Ppmd7Dec.c" />
+    <ClCompile Include="lzma\Ppmd7Enc.c" />
+    <ClCompile Include="lzma\Sha256.c" />
+    <ClCompile Include="lzma\Sort.c" />
+    <ClCompile Include="lzma\Threads.c" />
+    <ClCompile Include="lzma\Xz.c" />
+    <ClCompile Include="lzma\XzCrc64.c" />
+    <ClCompile Include="lzma\XzCrc64Opt.c" />
+    <ClCompile Include="lzma\XzDec.c" />
+    <ClCompile Include="lzma\XzEnc.c" />
+    <ClCompile Include="lzma\XzIn.c" />
     <ClCompile Include="md5.cpp" />
-    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Source.cpp">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Source.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="color_process.h" />
+    <ClInclude Include="endian_rw.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="inc\AssetsTools\AssetBundleFileTable.h" />
     <ClInclude Include="inc\AssetsTools\AssetsBundleFileFormat.h" />
@@ -115,10 +168,54 @@
     <ClInclude Include="inc\AssetsTools\defines.h" />
     <ClInclude Include="inc\AssetsTools\ResourceManagerFile.h" />
     <ClInclude Include="inc\AssetsTools\TextureFileFormat.h" />
+    <ClInclude Include="lz4\lz4.h" />
+    <ClInclude Include="lz4\lz4frame.h" />
+    <ClInclude Include="lz4\lz4frame_static.h" />
+    <ClInclude Include="lz4\lz4hc.h" />
+    <ClInclude Include="lz4\lz4opt.h" />
+    <ClInclude Include="lz4\xxhash.h" />
+    <ClInclude Include="lzma\7z.h" />
+    <ClInclude Include="lzma\7zAlloc.h" />
+    <ClInclude Include="lzma\7zBuf.h" />
+    <ClInclude Include="lzma\7zCrc.h" />
+    <ClInclude Include="lzma\7zFile.h" />
+    <ClInclude Include="lzma\7zTypes.h" />
+    <ClInclude Include="lzma\7zVersion.h" />
+    <ClInclude Include="lzma\Aes.h" />
+    <ClInclude Include="lzma\Alloc.h" />
+    <ClInclude Include="lzma\Bcj2.h" />
+    <ClInclude Include="lzma\Bra.h" />
+    <ClInclude Include="lzma\Compiler.h" />
+    <ClInclude Include="lzma\CpuArch.h" />
+    <ClInclude Include="lzma\Delta.h" />
+    <ClInclude Include="lzma\DllSecur.h" />
+    <ClInclude Include="lzma\LzFind.h" />
+    <ClInclude Include="lzma\LzFindMt.h" />
+    <ClInclude Include="lzma\LzHash.h" />
+    <ClInclude Include="lzma\Lzma2Dec.h" />
+    <ClInclude Include="lzma\Lzma2Enc.h" />
+    <ClInclude Include="lzma\Lzma86.h" />
+    <ClInclude Include="lzma\LzmaDec.h" />
+    <ClInclude Include="lzma\LzmaEnc.h" />
+    <ClInclude Include="lzma\LzmaLib.h" />
+    <ClInclude Include="lzma\MtCoder.h" />
+    <ClInclude Include="lzma\Ppmd.h" />
+    <ClInclude Include="lzma\Ppmd7.h" />
+    <ClInclude Include="lzma\Precomp.h" />
+    <ClInclude Include="lzma\RotateDefs.h" />
+    <ClInclude Include="lzma\Sha256.h" />
+    <ClInclude Include="lzma\Sort.h" />
+    <ClInclude Include="lzma\Threads.h" />
+    <ClInclude Include="lzma\Xz.h" />
+    <ClInclude Include="lzma\XzCrc64.h" />
+    <ClInclude Include="lzma\XzEnc.h" />
     <ClInclude Include="md5.h" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="lib\AssetsTools.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="lzma\7zVersion.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
