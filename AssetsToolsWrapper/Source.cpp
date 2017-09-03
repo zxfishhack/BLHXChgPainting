@@ -365,3 +365,68 @@ bool ReplaceImageFile(const char* fn, const char* png, const char* textureName) 
 	}
 	return false;
 }
+
+#include "lz4/lz4.h"
+
+void ExportShader(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
+	AssetsBundleFile bf;
+	file infile;
+	bool same;
+	std::string shaderOut(lpszCmdLine);
+	shaderOut += ".txt";
+	if (!check_open(lpszCmdLine, infile, same) || !bf.Read(file::reader, infile, verifyLog, false)) {
+		return ;
+	}
+	if (bf.bundleHeader6.fileVersion != 6) {
+		return ;
+	}
+	LPARAM p(infile);
+	if (!bf.IsAssetsFile(file::reader, infile, bf.bundleInf6->dirInf)) {
+		return;
+	}
+	auto reader = bf.MakeAssetsFileReader(file::reader, &p, bf.bundleInf6->dirInf);
+	if (!reader) {
+		return;
+	}
+	AssetsFileReaderAutoFree _(reader, p);
+	AssetsFile assetsFile(reader, p);
+	if (!assetsFile.VerifyAssetsFile(verifyLog) || !assetsFile.typeTree.hasTypeTree) {
+		return;
+	}
+	AssetsFileTable assetsFileTable(&assetsFile);
+	for (DWORD i = 0; i<assetsFileTable.assetFileInfoCount; i++) {
+		auto assetFileInfoEx = assetsFileTable.pAssetFileInfo[i];
+		if (assetFileInfoEx.curFileType == 0x30) {
+			AssetTypeTemplateField root;
+			auto pr = &root;
+			// shader
+			for (DWORD j = 0; j<assetsFile.typeTree.fieldCount; j++) {
+				if (assetsFile.typeTree.pTypes_Unity5[j].classId == assetFileInfoEx.inheritedUnityClass) {
+					root.From0D(assetsFile.typeTree.pTypes_Unity5 + j, 0);
+					break;
+				}
+			}
+			std::auto_ptr<char> buf(new char[assetFileInfoEx.curFileSize]);
+			if (reader(assetFileInfoEx.absolutePos, assetFileInfoEx.curFileSize, buf.get(), p) == assetFileInfoEx.curFileSize) {
+				auto assetValueReader = Create_AssetsReaderFromMemory(buf.get(), assetFileInfoEx.curFileSize, false);
+				AssetTypeInstance inst(1, &pr, AssetsReaderFromMemory, assetValueReader, false);
+				auto& rtv = *(inst.GetBaseField());
+				auto& m_SubProgramBlob = *(rtv["m_SubProgramBlob"]);
+				auto& array = *m_SubProgramBlob["Array"];
+				auto size = array.GetChildrenCount();
+				std::string shaderBuffer;
+				std::string outputBuffer;
+				shaderBuffer.resize(size);
+				outputBuffer.resize(4 * 1024 * 1024);
+				for(DWORD idx=0; idx<size; idx++) {
+					shaderBuffer[idx] = array.GetChildrenList()[idx]->GetValue()->AsInt();
+				}
+				auto decSize = LZ4_decompress_safe(shaderBuffer.data(), (char*)outputBuffer.data(), size, 4 * 1024 * 1024);
+				std::ofstream out;
+				out.open(shaderOut, std::ios::binary);
+				out.write(outputBuffer.data(), decSize);
+				return;
+			}
+		}
+	}
+}

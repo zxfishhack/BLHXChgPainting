@@ -375,6 +375,7 @@ namespace BLHXChgPainting
             var dlg = new CommonOpenFileDialog(@"打开游戏资源目录(AssetBundles)...") {IsFolderPicker = true};
             if (dlg.ShowDialog() != CommonFileDialogResult.Ok) return;
             Browser.DirPath = dlg.FileName;
+            Browser.Root.Clear();
             SelectFolders(dlg.FileName, Browser.Root);
         }
 
@@ -406,7 +407,7 @@ namespace BLHXChgPainting
         private void OnFileSelect(object sender, RoutedEventArgs ev)
         {
             var node = (Node)BrowserTree.SelectedItem;
-            if (node.IsDir) return;
+            if (node == null || node.IsDir) return;
             var fnode = (FileNode) node;
             Browser.ListLoading = true;
             Browser.TextureList.Clear();

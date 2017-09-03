@@ -4,3 +4,4 @@ GetTextureList = GetTextureList
 GetImageInfo = GetImageInfo
 LoadImageFromBundle = LoadImageFromBundle
 ReplaceImageFile = ReplaceImageFile
+ExportShader = ExportShader
